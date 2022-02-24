@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load pyboard_filter %}
+
+{% block content %}
+<div class="container my-3">
+    <!-- <div class="row justify-content-end my-3"> -->
+    <div class="row justify-content-between my-3">    
+        <div class="col-2">
+            <select class="sort_order form-control">
+                <option value="recent" {% if sortOrder == 'recent' %}selected{% endif %}>최신순</option>
+                <option value="recommendatory" {% if sortOrder == 'recommendatory' %}selected{% endif %}>추천순</option>
+                <option value="popular" {% if sortOrder == 'popular' %}selected{% endif %}>인기순</option>
+            </select>
+        </div>
+        <div class="col-4 input-group">
+            <input type="text" class="key_word form-control" value="{{ keyword|default_if_none:'' }}">
+            <div class="input=group-append">
+                <button type="button" id="btnSearch" class="btn btn-outline-secondary">검색</button>
+            </div>
+        </div>
+    </div>
+    <table class="table">
+        <thead>
+            <tr class="text-center thead-dark">
+                <th>번호</th>
+                <th>추천</th>
+                <th style="width:50%">제목</th>
+                <th>글쓴이</th>
+                <th>작성일시</th>
+            </tr>    
+        </thead>
+        <tbody>
+            {% if questionList %}
+            {% for question in questionList %}
+            <tr class="text-center">
+                <td>{{ questionList.paginator.count|sub:questionList.start_index|sub:forloop.counter0|add:1 }}</td>
+                <td>
+                    {% if question.recommenders.all.count > 0 %}
+                    <span class="badge bg-success px-2 py-1">{{ question.recommenders.all.count }}</span>  <!-- Use bg-secondary or alert-warning -->
+                    {% endif %}
+                </td>
+                <td class="text-start">  <!-- Bootstrap 5 uses "text-start" instead of "text-left" -->
+                    <a href="{% url 'pyboard:detailQuestion' question.id %}">{{ question.subject }}</a>
+                    {% if question.answer_set.count > 0 %}
+                    <span class="text-danger small ml-2">{{ question.answer_set.count }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ question.author.username }}</td>
+                <td>{{ question.create_date }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="3">질문이 없습니다.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    <ul class="pagination justify-content-center">
+        <li class="page-item">
+            <a href="#" data-page-number="1" class="page-link">처음</a>
+        </li>
+        {% if questionList.has_previous %}
+        <li class="page-item">
+            <!-- <a href="?page={{ questionList.previous_page_number }}" class="page-link">이전</a> -->
+            <a href="#" data-page-number="{{ questionList.previous_page_number }}" class="page-link">이전</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a href="#" class="page-link" tabindex="-1" aria-disabled="true">이전</a>
+        </li>
+        {% endif %}
+        {% for pageNumber in questionList.paginator.page_range %}
+        {% if pageNumber >= questionList.number|add:-5 and pageNumber <= questionList.number|add:5 %}
+        {% if pageNumber == questionList.number %}
+        <li class="page-item active" aria-current="page">
+            <!-- <a href="?page={{ pageNumber }}" class="page-link">{{ pageNumber }}</a> -->
+            <a href="#" data-page-number="{{ pageNumber }}" class="page-link">{{ pageNumber }}</a>
+        </li>
+        {% else %}
+        <li class="page-item">
+            <!-- <a href="?page={{ pageNumber }}" class="page-link">{{ pageNumber }}</a> -->
+            <a href="#" data-page-number="{{ pageNumber }}" class="page-link">{{ pageNumber }}</a>
+        </li>
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+        {% if questionList.has_next %}
+        <li class="page-item">
+            <!-- <a href="?page={{ questionList.next_page_number }}" class="page-link">다음</a> -->
+            <a href="#" data-page-number="{{ questionList.next_page_number }}" class="page-link">다음</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a href="#" class="page-link" tabindex="-1" aria-disabled="true">다음</a>
+        </li>
+        {% endif %}
+        <li class="page-item">
+            <a href="#" data-page-number="{{ lastPageNumber }}" class="page-link">마지막</a>
+        </li>
+    </ul>
+    <a href="{% url 'pyboard:createQuestion' %}" class="btn btn-primary">질문 등록</a>
+    <form action="{% url 'pyboard:index' %}" method="get" id="formSearch">
+        <input type="hidden" name="pageNumber" id="pageNumber" value="{{ pageNumber }}">
+        <input type="hidden" name="keyword" id="keyword" value="{{ keyword|default_if_none:'' }}">
+        <input type="hidden" name="sortOrder" id="sortOrder" value="{{ sortOrder }}">
+    </form>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+$(document).ready(function() {
+    $(".page-link").on("click", function() {
+        $("#pageNumber").val($(this).data("pageNumber"));
+        $("#formSearch").submit();
+    });
+    $("#btnSearch").on("click", function() {
+        $("#keyword").val($(".key_word").val());
+        $("#pageNumber").val(1);
+        $("#formSearch").submit();
+    }); 
+    $(".sort_order").on("change", function() {
+        $("#sortOrder").val($(this).val());
+        $("#pageNumber").val(1);
+        $("#formSearch").submit();
+    });     
+});
+</script>
+{% endblock %}

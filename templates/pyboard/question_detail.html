@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load pyboard_filter %}
+
+{% block content %}
+<div class="container my-3">
+    {% include 'messages.html' %}
+    <h2 class="border-bottom py-2">{{ question.subject }}</h2>
+    <div class="row my-3">
+        <div class="col-1">
+            <div class="bg-light text-center p-3 border font-weight-border mb-1">{{ question.recommenders.count }}</div>
+            <a href="#" class="recommend btn btn-sm btn-secondary btn-block my-1" 
+                   data-uri="{% url 'pyboard:recommendQuestion' question.id %}">추천</a>
+        </div>
+        <div class="col-11">
+            <div class="card">  <!-- delete my-3 -->
+                <div class="card-body">
+                    <div class="card-text" style="white-space: pre-line">
+                        {{ question.content|mark }}
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        {% if question.modify_date %}
+                        <div class="badge bg-light text-dark text-start p-2 mx-3">
+                            <div class="mb-1">수정일시</div>
+                            <div>{{ question.modify_date }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="badge bg-light text-dark text-start p-2">
+                            <div class="mb-1">{{ question.author.username }}</div>
+                            <div>{{ question.create_date }}</div>
+                        </div>
+                    </div>
+                    {% if request.user == question.author %}
+                    <div class="my-3">
+                        <a href="{% url 'pyboard:modifyQuestion' question.id %}" 
+                           class="btn btn-sm btn-outline-secondary">수정</a>
+                        <a href="#" class="delete btn btn-sm btn-outline-secondary" 
+                           data-uri="{% url 'pyboard:deleteQuestion' question.id %}">삭제</a>
+                    </div>
+                    {% endif %}
+                    {% if question.comment_set.count > 0 %}
+                    <div class="mt-3">
+                        {% for comment in question.comment_set.all %}
+                        <a name="comment_{{ comment.id }}"></a>
+                        <div class="comment py-2 text-muted">
+                            <span style="white-space: pre-line;">{{ comment.content }}</span>
+                            <span>
+                                by {{ comment.author }}, {{ comment.create_date }}
+                                {% if comment.modify_date %}
+                                (modified at {{ comment.modify_date }})
+                                {% endif %}
+                            </span>
+                            {% if request.user == comment.author %}
+                            <a href="{% url 'pyboard:modifyCommentForQuestion' comment.id %}" class="small">수정</a>
+                            <a href="#" class="delete small" data-uri="{% url 'pyboard:deleteCommentForQuestion' comment.id %}">삭제</a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>        
+                    {% endif %}
+                    <div>
+                        <a href="{% url 'pyboard:createCommentForQuestion' question.id %}" class="small">댓글 등록</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <h5>{{ question.answer_set.count }}개의 답변이 있습니다.</h5>
+    {% for answer in question.answer_set.all %}
+    <a name="answer_{{ answer.id }}"></a>
+    <div class="row my-3">
+        <div class="col-1">
+            <div class="bg-light text-center p-3 border font-weight-border mb-1">{{ answer.recommenders.count }}</div>
+            <a href="#" class="recommend btn btn-sm btn-secondary btn-block my-1" 
+                   data-uri="{% url 'pyboard:recommendAnswer' answer.id %}">추천</a>
+        </div>
+        <div class="col-11">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-text" style="white-space: pre-line;">
+                        {{ answer.content|mark }}
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        {% if answer.modify_date %}
+                        <div class="badge bg-light text-dark text-start p-2 mx-3">
+                            <div class="mb-1">수정일시</div>
+                            <div>{{ answer.modify_date }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="badge bg-light text-dark text-start p-2">
+                            <div class="mb-1">{{ answer.author.username }}</div>
+                            <div>{{ answer.create_date }}</div>
+                        </div>
+                    </div>
+                    {% if request.user == answer.author %}
+                    <div class="my-3">
+                        <a href="{% url 'pyboard:modifyAnswer' answer.id %}" 
+                           class="btn btn-sm btn-outline-secondary">수정</a>
+                        <a href="#" class="delete btn btn-sm btn-outline-secondary" 
+                           data-uri="{% url 'pyboard:deleteAnswer' answer.id %}">삭제</a>
+                    </div>
+                    {% endif %}
+                    {% if answer.comment_set.count > 0 %}
+                    <div class="mt-3">
+                        {% for comment in answer.comment_set.all %}
+                        <a name="comment_{{ comment.id }}"></a>
+                        <div class="comment py-2 text-muted">
+                            <span style="white-space: pre-line;">{{ comment.content }}</span>
+                            <span>
+                                by {{ comment.author }}, {{ comment.create_date }}
+                                {% if comment.modify_date %}
+                                (modified at {{ comment.modify_date }})
+                                {% endif %}
+                            </span>
+                            {% if request.user == comment.author %}
+                            <a href="{% url 'pyboard:modifyCommentForAnswer' comment.id %}" class="small">수정</a>
+                            <a href="#" class="delete small" data-uri="{% url 'pyboard:deleteCommentForAnswer' comment.id %}">삭제</a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>        
+                    {% endif %}
+                    <div>
+                        <a href="{% url 'pyboard:createCommentForAnswer' answer.id %}" class="small">댓글 등록</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <form action="{% url 'pyboard:createAnswer' question.id %}" method="post" class="my-3">
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for field in form %}
+            {% if field.errors %}
+            <strong>{{ field.label }}</strong>
+            {{ field.errors }}
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="form-group">
+            <textarea name="content" id="content" rows="10" class=form-control
+                {% if not user.is_authenticated %}disabled{% endif %}></textarea>
+        </div>
+        <input type="submit" class="btn btn-primary my-3" value="답변 등록">
+    </form>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+$(document).ready(function() {
+    $(".delete").on("click", function() {
+        if(confirm("정말로 삭제하시겠습니까?")) {
+            location.href = $(this).data("uri");
+        }
+    });
+    $(".recommend").on("click", function() {
+        if(confirm("정말로 추천하시겠습니까?")) {
+            location.href = $(this).data("uri");
+        }
+    });        
+});
+</script>
+{% endblock %}
